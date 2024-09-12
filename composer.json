@@ -1,0 +1,26 @@
+{
+    "name": "ereborcodeforge/mithrilexecutor",
+    "description": "A library to execute scripts and files in the background seamlessly, providing an simple and easy-to-use interface for managing background processes in PHP.",
+    "type": "library",
+    "license": "MIT",
+    "version": "1.0.0",
+    "autoload": {
+        "psr-4": {
+            "MithrilExecutor\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Test\\MithrilExecutor\\": "test/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Thales Ruppenthal",
+            "email": "thales.rup@gmail.com"
+        }
+    ],
+    "require-dev": {
+        "phpunit/phpunit": "^11.3"
+    }
+}
