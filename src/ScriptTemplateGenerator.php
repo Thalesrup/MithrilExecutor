@@ -10,6 +10,7 @@ class ScriptTemplateGenerator
         array $methods,
         string $logFilePath,
         string $errorLogFilePath,
+        string $serializeFilePath,
         ?string $pathFile = null
     ): string {
         $serializedParams = serialize($params);
@@ -28,6 +29,9 @@ class ScriptTemplateGenerator
         \$instance = new \$className(...\$args);
 
         \$reflectionClass = new ReflectionClass(\$className);
+        
+        file_put_contents('$logFilePath', "Process started [\$className] at: " . date('Y-m-d H:i:s') . PHP_EOL, FILE_APPEND);
+
         foreach (\$methods as \$method) {
             \$methodName = \$method['method'];
             \$methodArgs = \$method['args'];
@@ -51,8 +55,7 @@ class ScriptTemplateGenerator
         }
         
         \$serializedOutputs = serialize(\$methodOutputs);
-        file_put_contents('$logFilePath', "Process started [\$className] at: " . date('Y-m-d H:i:s') . PHP_EOL, FILE_APPEND);
-        file_put_contents(sys_get_temp_dir() . '/background_executor_output.ser', \$serializedOutputs);
+        file_put_contents('$serializeFilePath', \$serializedOutputs);
         PHP;
     }
 
@@ -62,7 +65,8 @@ class ScriptTemplateGenerator
         array $methods,
         string $pathFile,
         string $logFilePath,
-        string $errorLogFilePath
+        string $errorLogFilePath,
+        string $serializeFilePath
     ): string {
         return $this->buildPhpTemplate(
             $className,
@@ -70,6 +74,7 @@ class ScriptTemplateGenerator
             $methods,
             $logFilePath,
             $errorLogFilePath,
+            $serializeFilePath,
             $pathFile
         );
     }

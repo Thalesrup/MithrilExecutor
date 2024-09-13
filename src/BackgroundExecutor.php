@@ -2,8 +2,6 @@
 
 namespace MithrilExecutor;
 
-use SebastianBergmann\Template\Template;
-
 class BackgroundExecutor implements ExecutorInterface
 {
     private ProcessManager $processManager;
@@ -81,6 +79,11 @@ class BackgroundExecutor implements ExecutorInterface
         return $this->processManager->getPID();
     }
 
+    public function unlinkFileLogs():void
+    {
+        $this->logger->unlinAllFilePath();
+    }
+
     private function handleInstance(): string
     {
         return $this->pathFile 
@@ -96,6 +99,7 @@ class BackgroundExecutor implements ExecutorInterface
             $this->methods,
             $this->logger->getLogPath(),
             $this->logger->getErrorLogPath(),
+            $this->logger->getSerializeFilePath()
         );
     }
 
@@ -108,6 +112,7 @@ class BackgroundExecutor implements ExecutorInterface
             $this->pathFile,
             $this->logger->getLogPath(),
             $this->logger->getErrorLogPath(),
+            $this->logger->getSerializeFilePath()
         );
     }
 }
