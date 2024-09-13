@@ -28,7 +28,7 @@ $outputResult = $backgroundInstance
 
 <br>
 
-##Exemplo: passando arquivo como referencia
+Example: passing a file as a reference
 
 ```bash
 use MithrilExecutor\BackgroundExecutor;
