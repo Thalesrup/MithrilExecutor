@@ -1,30 +1,29 @@
 # MithrilExecutor
 
-**MithrilExecutor** é uma library do PHP que facilita a execução de tarefas em segundo plano. Ela permite rodar arquivos PHP ou instanciar classes, executar métodos em uma ordem definida e capturar logs e retornos dos métodos passados. Com a **MithrilExecutor**, você pode agendar a execução de tarefas e processá-las de forma assíncrona, ideal para operações longas ou intensivas.
+**MithrilExecutor** is a PHP library that facilitates the execution of background tasks. It allows you to run PHP files or instantiate classes, execute methods in a defined order, and capture logs and return values from the referenced methods. With **MithrilExecutor**, you can schedule task execution and process them asynchronously, making it ideal for long-running or intensive operations.
 
-## Instalação
+## Installation
 
-Você pode instalar o **MithrilExecutor** via [Composer](https://getcomposer.org/). No seu terminal, rode o seguinte comando:
+You can install **MithrilExecutor** via [Composer](https://getcomposer.org/). Run the following command in your terminal:
 
 ```bash
 composer require ereborcodeforge/mithrilexecutor
-```
 
-##Exemplo: passando instancia como referência
+
+##Example: passing an instance as a reference
 
 ```bash
 use MithrilExecutor\BackgroundExecutor;
 
-$this->backgroundInstance = new BackgroundExecutor();
-$outputResult = $this->backgroundInstance
-    ->withConstruct(TestClass::class)  // Instancia a classe a ser executada
-    ->addMethod('clearLog')            // Adiciona o método 'clearLog' para execução
-    ->addMethod('fetchDataAndLog')     // Adiciona o método 'fetchDataAndLog' para execução
-    ->addMethod('getLog')              // Adiciona o método 'getLog' para execução
-    ->runNow()                         // Executa os métodos em segundo plano
-    ->getOutPuts();                    // Retorna os resultados de saída
+$backgroundInstance = new BackgroundExecutor();
+$outputResult = $backgroundInstance
+    ->withConstruct(TestClass::class)  // Instantiates the class to be executed
+    ->addMethod('clearLog')            // Adds the 'clearLog' method for execution
+    ->addMethod('fetchDataAndLog')     // Adds the 'fetchDataAndLog' method for execution
+    ->addMethod('getLog')              // Adds the 'getLog' method for execution
+    ->runNow()                         // Executes the methods in the background
+    ->getOutPuts();                    // Returns the output results
 
-);
 ```
 
 <br>
@@ -34,14 +33,13 @@ $outputResult = $this->backgroundInstance
 ```bash
 use MithrilExecutor\BackgroundExecutor;
 
-$this->backgroundInstance = new BackgroundExecutor();
-$outputResult = $this->backgroundInstance
-    ->withFile('/path/to/script.php', 'CllassName') // Define o arquivo PHP a ser executado
-    ->addMethod('clearLog')            // Adiciona o método 'clearLog' para execução
-    ->addMethod('fetchDataAndLog')     // Adiciona o método 'fetchDataAndLog' para execução
-    ->addMethod('getLog')              // Adiciona o método 'getLog' para execução
-    ->runNow()                         // Executa os métodos em segundo plano
-    ->getOutPuts();                    // Retorna os resultados de saída
-
+$backgroundInstance = new BackgroundExecutor();
+$outputResult = $backgroundInstance
+    ->withFile('/path/to/script.php', 'ClassName') // Defines the PHP file to be executed
+    ->addMethod('clearLog')            // Adds the 'clearLog' method for execution
+    ->addMethod('fetchDataAndLog')     // Adds the 'fetchDataAndLog' method for execution
+    ->addMethod('getLog')              // Adds the 'getLog' method for execution
+    ->runNow()                         // Executes the methods in the background
+    ->getOutPuts();                    // Returns the output results
 
 ```
