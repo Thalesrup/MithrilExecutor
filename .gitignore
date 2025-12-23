@@ -1,10 +1,9 @@
+# Dependencies
 /vendor
-/storage/queue/*
-/storage/logs/*
-/storage/results/*
-!/storage/queue/.gitkeep
-!/storage/logs/.gitkeep
-!/storage/results/.gitkeep
+
+# Storage - Queues and Logs
+/storage/*
+!/storage/.gitkeep
 
 .idea/
 .vscode/
