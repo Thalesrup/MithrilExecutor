@@ -1,0 +1,9 @@
+{
+    "jobId": "report-20251222-191956",
+    "ok": false,
+    "error": "Class not found: Example\\ReportGenerator",
+    "exception": "RuntimeException",
+    "trace": "#0 C:\\Users\\Phales\\MithrilExecutor\\src\\Runner\\MethodCallRunner.php(43): MithrilExecutor\\Resolvers\\ReflectionResolver->resolve()\n#1 C:\\Users\\Phales\\MithrilExecutor\\src\\Worker\\Worker.php(28): MithrilExecutor\\Runner\\MethodCallRunner->run()\n#2 C:\\Users\\Phales\\MithrilExecutor\\src\\Worker\\Worker.php(66): MithrilExecutor\\Worker\\Worker->workOnce()\n#3 C:\\Users\\Phales\\MithrilExecutor\\bin\\mithril(233): MithrilExecutor\\Worker\\Worker->daemon()\n#4 {main}",
+    "status": "failed",
+    "savedAtMs": 1766431196948
+}

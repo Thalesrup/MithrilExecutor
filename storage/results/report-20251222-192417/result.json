@@ -1,0 +1,20 @@
+{
+    "jobId": "report-20251222-192417",
+    "ok": true,
+    "startedAtMs": 1766431457546,
+    "finishedAtMs": 1766431463611,
+    "durationMs": 6065,
+    "calls": {
+        "generate": {
+            "ok": true,
+            "return": {
+                "status": "generated",
+                "file": "C:\\Users\\Phales\\MithrilExecutor\\example/reports\\report_financial_2025.csv",
+                "size": 20
+            },
+            "durationMs": 6064
+        }
+    },
+    "status": "done",
+    "savedAtMs": 1766431463615
+}

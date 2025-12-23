@@ -1,25 +1,44 @@
 {
-    "name": "ereborcodeforge/mithrilexecutor",
-    "description": "A library to execute scripts and files in the background seamlessly, providing an simple and easy-to-use interface for managing background processes in PHP.",
-    "type": "library",
-    "license": "MIT",
-    "autoload": {
-        "psr-4": {
-            "MithrilExecutor\\": "src/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "Test\\MithrilExecutor\\": "test/"
-        }
-    },
-    "authors": [
-        {
-            "name": "Thales Ruppenthal",
-            "email": "thales.rup@gmail.com"
-        }
-    ],
-    "require-dev": {
-        "phpunit/phpunit": "^11.3"
+  "name": "ereborcodeforge/mithrilexecutor",
+  "description": "Lightweight PHP background job runner with filesystem queue, daemon mode, and pluggable resolvers (no dependencies).",
+  "type": "library",
+  "license": "MIT",
+  "keywords": [
+    "php",
+    "background",
+    "job",
+    "queue",
+    "daemon",
+    "worker",
+    "task-runner",
+    "filesystem"
+  ],
+  "authors": [
+    {
+      "name": "Thales Ruppenthal",
+      "email": "thales.rup@gmail.com"
     }
+  ],
+  "homepage": "https://github.com/Thalesrup/MithrilExecutor",
+  "support": {
+    "source": "https://github.com/Thalesrup/MithrilExecutor",
+    "issues": "https://github.com/Thalesrup/MithrilExecutor/issues"
+  },
+  "autoload": {
+    "psr-4": {
+      "MithrilExecutor\\": "src/"
+    }
+  },
+  "require": {
+    "php": ">=8.1"
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Test\\MithrilExecutor\\": "test/",
+      "MithrilExecutor\\Tests\\Fixtures\\": "test/Fixtures/"
+    }
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^12.5"
+  }
 }
