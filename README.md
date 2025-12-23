@@ -60,7 +60,7 @@ php bin/mithril daemon --bootstrap=example/bootstrap.php --concurrency=4 --memor
 ### Global Flags (Available for most commands)
 | Flag | Description |
 |------|-------------|
-| `--bootstrap` | Path to a PHP file that returns a `ResolverInterface`. Used to load your application's autoloader or DI container. Required if your job classes are not in the lib's `src/`. |
+| `--bootstrap` | Path to a PHP file that returns a `ResolverInterface`. Used to load your application's autoloader or DI container. **Optional** if your jobs are already autoloaded by Composer in the project root. |
 | `--storage` | Custom path to the storage directory (defaults to `storage/`). |
 
 ### `daemon`

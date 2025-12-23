@@ -29,11 +29,12 @@ final class BootstrapResolverLoader
 
         $resolver = require $bootstrapPath;
 
-        if (!$resolver instanceof ResolverInterface) {
-            $type = is_object($resolver) ? get_class($resolver) : gettype($resolver);
-            throw new \RuntimeException("Bootstrap must return ResolverInterface, got: {$type}");
+        if ($resolver instanceof ResolverInterface) {
+            return $resolver;
         }
 
-        return $resolver;
+        // Se o arquivo foi incluído mas não retornou um resolver (ex: retornou '1' do require),
+        // assumimos que foi apenas para carregar classes/funções e usamos o Resolver padrão.
+        return new ReflectionResolver();
     }
 }

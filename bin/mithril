@@ -1,8 +1,21 @@
 #!/usr/bin/env php
 <?php
+
 declare(strict_types=1);
 
-require __DIR__ . '/../vendor/autoload.php';
+$paths = [
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php',
+];
+
+$loaded = false;
+foreach ($paths as $path) {
+    if (file_exists($path)) {
+        require $path;
+        $loaded = true;
+        break;
+    }
+}
 
 use MithrilExecutor\Console\ConsoleHelper;
 use MithrilExecutor\Queue\FileJobQueue;
@@ -23,7 +36,7 @@ try {
     $worker = new Worker($queue, $runner);
 
     // Setup CLI Logger
-    $worker->onLog = function(string $msg) {
+    $worker->onLog = function (string $msg) {
         $timestamp = date('H:i:s');
         match (true) {
             str_contains($msg, 'Done') => ConsoleHelper::success("[{$timestamp}] {$msg}"),
@@ -37,214 +50,220 @@ try {
 
     switch ($command) {
         case 'enqueue': {
-            $class = ConsoleHelper::arg('class');
-            if (!$class) {
-                throw new RuntimeException('Missing --class');
+                $class = ConsoleHelper::arg('class');
+                if (!$class) {
+                    throw new RuntimeException('Missing --class');
+                }
+                $ctorJson = ConsoleHelper::arg('ctor', '[]');
+                $callsJson = ConsoleHelper::arg('calls', '[]');
+
+                $ctor = json_decode($ctorJson, true);
+                $calls = json_decode($callsJson, true);
+
+                if (!is_array($ctor) || !is_array($calls)) {
+                    throw new RuntimeException('Invalid JSON in --ctor or --calls');
+                }
+
+                $job = new Job(
+                    Job::newId(),
+                    $class,
+                    $ctor,
+                    $calls,
+                    (int) floor(microtime(true) * 1000),
+                    null
+                );
+
+                $id = $queue->enqueue($job);
+                ConsoleHelper::println("Enqueued: {$id}");
+                exit(0);
             }
-            $ctorJson = ConsoleHelper::arg('ctor', '[]');
-            $callsJson = ConsoleHelper::arg('calls', '[]');
-
-            $ctor = json_decode($ctorJson, true);
-            $calls = json_decode($callsJson, true);
-
-            if (!is_array($ctor) || !is_array($calls)) {
-                throw new RuntimeException('Invalid JSON in --ctor or --calls');
-            }
-
-            $job = new Job(
-                Job::newId(),
-                $class,
-                $ctor,
-                $calls,
-                (int) floor(microtime(true) * 1000),
-                null
-            );
-
-            $id = $queue->enqueue($job);
-            ConsoleHelper::println("Enqueued: {$id}");
-            exit(0);
-        }
 
         case 'list': {
-            $status = ConsoleHelper::arg('status', 'all');
+                $status = ConsoleHelper::arg('status', 'all');
 
-            // Flag shortcuts
-            if (ConsoleHelper::hasFlag('pending')) $status = 'pending';
-            if (ConsoleHelper::hasFlag('running')) $status = 'running';
-            if (ConsoleHelper::hasFlag('done')) $status = 'done';
-            if (ConsoleHelper::hasFlag('failed')) $status = 'failed';
+                // Flag shortcuts
+                if (ConsoleHelper::hasFlag('pending')) $status = 'pending';
+                if (ConsoleHelper::hasFlag('running')) $status = 'running';
+                if (ConsoleHelper::hasFlag('done')) $status = 'done';
+                if (ConsoleHelper::hasFlag('failed')) $status = 'failed';
 
-            $jobs = $queue->list($status);
+                $jobs = $queue->list($status);
 
-            // Export options
-            $format = ConsoleHelper::arg('format'); // json, csv
-            $outputFile = ConsoleHelper::arg('output');
-            
-            if ($format === 'json') {
-                $json = json_encode($jobs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-                if ($outputFile) {
-                    if (file_put_contents($outputFile, $json) === false) {
-                        ConsoleHelper::error("Failed to write to file: {$outputFile}");
+                // Export options
+                $format = ConsoleHelper::arg('format'); // json, csv
+                $outputFile = ConsoleHelper::arg('output');
+
+                if ($format === 'json') {
+                    $json = json_encode($jobs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+                    if ($outputFile) {
+                        if (file_put_contents($outputFile, $json) === false) {
+                            ConsoleHelper::error("Failed to write to file: {$outputFile}");
+                            exit(1);
+                        }
+                        ConsoleHelper::success("Output saved to {$outputFile}");
+                    } else {
+                        ConsoleHelper::println($json);
+                    }
+                    exit(0);
+                }
+
+                if ($format === 'csv') {
+                    $dest = $outputFile ?: 'php://output';
+                    $out = fopen($dest, 'w');
+                    if ($out === false) {
+                        ConsoleHelper::error("Failed to open file for writing: {$dest}");
                         exit(1);
                     }
-                    ConsoleHelper::success("Output saved to {$outputFile}");
-                } else {
-                    ConsoleHelper::println($json);
-                }
-                exit(0);
-            }
 
-            if ($format === 'csv') {
-                $dest = $outputFile ?: 'php://output';
-                $out = fopen($dest, 'w');
-                if ($out === false) {
-                    ConsoleHelper::error("Failed to open file for writing: {$dest}");
-                    exit(1);
+                    fputcsv($out, ['id', 'status', 'class', 'created_at']);
+                    foreach ($jobs as $job) {
+                        fputcsv($out, [$job['id'], $job['status'], $job['class'], $job['created_at']]);
+                    }
+                    fclose($out);
+
+                    if ($outputFile) {
+                        ConsoleHelper::success("Output saved to {$outputFile}");
+                    }
+                    exit(0);
                 }
 
-                fputcsv($out, ['id', 'status', 'class', 'created_at']);
-                foreach ($jobs as $job) {
-                    fputcsv($out, [$job['id'], $job['status'], $job['class'], $job['created_at']]);
+                if (empty($jobs)) {
+                    ConsoleHelper::println("No jobs found for status: {$status}");
+                    exit(0);
                 }
-                fclose($out);
-
-                if ($outputFile) {
-                    ConsoleHelper::success("Output saved to {$outputFile}");
-                }
-                exit(0);
-            }
-
-            if (empty($jobs)) {
-                ConsoleHelper::println("No jobs found for status: {$status}");
-                exit(0);
-            }
-
-            ConsoleHelper::println(sprintf(
-                "%-30s %-10s %-40s %-20s",
-                "JOB ID", "STATUS", "CLASS", "CREATED AT"
-            ));
-            ConsoleHelper::println(str_repeat("-", 100));
-
-            foreach ($jobs as $job) {
-                $statusColor = match ($job['status']) {
-                    'done' => '32', // Green
-                    'failed' => '31', // Red
-                    'running' => '33', // Yellow
-                    'pending' => '36', // Cyan
-                    default => '0',
-                };
 
                 ConsoleHelper::println(sprintf(
                     "%-30s %-10s %-40s %-20s",
-                    $job['id'],
-                    ConsoleHelper::colorize($job['status'], $statusColor),
-                    substr($job['class'], 0, 40),
-                    $job['created_at']
+                    "JOB ID",
+                    "STATUS",
+                    "CLASS",
+                    "CREATED AT"
                 ));
+                ConsoleHelper::println(str_repeat("-", 100));
+
+                foreach ($jobs as $job) {
+                    $statusColor = match ($job['status']) {
+                        'done' => '32', // Green
+                        'failed' => '31', // Red
+                        'running' => '33', // Yellow
+                        'pending' => '36', // Cyan
+                        default => '0',
+                    };
+
+                    ConsoleHelper::println(sprintf(
+                        "%-30s %-10s %-40s %-20s",
+                        $job['id'],
+                        ConsoleHelper::colorize($job['status'], $statusColor),
+                        substr($job['class'], 0, 40),
+                        $job['created_at']
+                    ));
+                }
+                exit(0);
             }
-            exit(0);
-        }
 
         case 'run': {
-            // executa um job JSON específico (não mexe em queue)
-            $file = ConsoleHelper::arg('file');
-            if (!$file) throw new RuntimeException('Missing --file=/path/job.json');
+                // executa um job JSON específico (não mexe em queue)
+                $file = ConsoleHelper::arg('file');
+                if (!$file) throw new RuntimeException('Missing --file=/path/job.json');
 
-            $raw = file_get_contents($file);
-            if ($raw === false) throw new RuntimeException("Cannot read job file: {$file}");
+                $raw = file_get_contents($file);
+                if ($raw === false) throw new RuntimeException("Cannot read job file: {$file}");
 
-            $data = json_decode($raw, true);
-            if (!is_array($data)) throw new RuntimeException("Invalid job json: {$file}");
+                $data = json_decode($raw, true);
+                if (!is_array($data)) throw new RuntimeException("Invalid job json: {$file}");
 
-            $job = Job::fromArray($data);
-            [$report, $stdout, $stderr] = $runner->run($job);
+                $job = Job::fromArray($data);
+                [$report, $stdout, $stderr] = $runner->run($job);
 
-            ConsoleHelper::println(json_encode($report->toArray(), JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT));
-            if ($stdout !== '') { ConsoleHelper::println("\n--- STDOUT ---\n" . $stdout); }
-            if ($stderr !== '') { ConsoleHelper::eprintln("\n--- STDERR ---\n" . $stderr); }
+                ConsoleHelper::println(json_encode($report->toArray(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+                if ($stdout !== '') {
+                    ConsoleHelper::println("\n--- STDOUT ---\n" . $stdout);
+                }
+                if ($stderr !== '') {
+                    ConsoleHelper::eprintln("\n--- STDERR ---\n" . $stderr);
+                }
 
-            exit($report->ok ? 0 : 2);
-        }
+                exit($report->ok ? 0 : 2);
+            }
 
         case 'work': {
-            $memory = ConsoleHelper::arg('memory');
-            if ($memory) {
-                ini_set('memory_limit', $memory);
-            }
-
-            $quiet = ConsoleHelper::hasFlag('quiet');
-            if (!$quiet) {
-                ConsoleHelper::info("Running worker in single mode...");
-            }
-            
-            $worked = $worker->workOnce();
-            
-            if (!$worked) {
-                if (!$quiet) {
-                    ConsoleHelper::warn("No job found in queue.");
-                }
-            }
-            exit($worked ? 0 : 1);
-        }
-
-        case 'daemon': {
-            ConsoleHelper::banner();
-            $sleep = (int) (ConsoleHelper::arg('sleep', '250') ?? '250');
-            $concurrency = (int) (ConsoleHelper::arg('concurrency', '1') ?? '1');
-            $memory = ConsoleHelper::arg('memory');
-            
-            if ($concurrency > 1) {
-                // Modo Supervisor (Multi-processo)
-                ConsoleHelper::info("Starting Mithril Supervisor (Concurrency: {$concurrency}, Sleep: {$sleep}ms)...");
-                if ($memory) {
-                    ConsoleHelper::info("Worker memory limit: {$memory} (per process)");
-                }
-                
-                // Monta o comando do worker filho
-                // Precisamos garantir que usamos o mesmo PHP e o mesmo script mithril
-                $phpBinary = PHP_BINARY;
-                $script = realpath(__DIR__ . '/mithril'); // self
-                
-                // Repassa argumentos críticos e desativa Xdebug nos filhos para limpar output
-                // Adiciona --quiet para evitar spam de "Running worker" e "No job found"
-                $workerCmd = sprintf(
-                    '"%s" -dxdebug.mode=off %s "%s" work --storage="%s" --quiet', 
-                    $phpBinary, 
-                    $memory ? "-d memory_limit={$memory}" : "",
-                    $script, 
-                    $storage
-                );
-                
-                if ($bootstrap) {
-                    $workerCmd .= sprintf(' --bootstrap="%s"', $bootstrap);
-                }
-                
-                $supervisor = new ProcessSupervisor($queue, $workerCmd, $concurrency, $worker->onLog);
-                ConsoleHelper::println("Press Ctrl+C to stop.");
-                $supervisor->run($sleep);
-                
-            } else {
-                // Modo Simples (Single-process loop)
+                $memory = ConsoleHelper::arg('memory');
                 if ($memory) {
                     ini_set('memory_limit', $memory);
-                    ConsoleHelper::info("Memory limit set to: {$memory}");
                 }
-                ConsoleHelper::info("Starting Mithril Worker in Daemon Mode (Single Process, Sleep: {$sleep}ms)...");
-                ConsoleHelper::println("Press Ctrl+C to stop.");
-                $worker->daemon($sleep);
+
+                $quiet = ConsoleHelper::hasFlag('quiet');
+                if (!$quiet) {
+                    ConsoleHelper::info("Running worker in single mode...");
+                }
+
+                $worked = $worker->workOnce();
+
+                if (!$worked) {
+                    if (!$quiet) {
+                        ConsoleHelper::warn("No job found in queue.");
+                    }
+                }
+                exit($worked ? 0 : 1);
             }
-            exit(0);
-        }
+
+        case 'daemon': {
+                ConsoleHelper::banner();
+                $sleep = (int) (ConsoleHelper::arg('sleep', '250') ?? '250');
+                $concurrency = (int) (ConsoleHelper::arg('concurrency', '1') ?? '1');
+                $memory = ConsoleHelper::arg('memory');
+
+                if ($concurrency > 1) {
+                    // Modo Supervisor (Multi-processo)
+                    ConsoleHelper::info("Starting Mithril Supervisor (Concurrency: {$concurrency}, Sleep: {$sleep}ms)...");
+                    if ($memory) {
+                        ConsoleHelper::info("Worker memory limit: {$memory} (per process)");
+                    }
+
+                    // Monta o comando do worker filho
+                    // Precisamos garantir que usamos o mesmo PHP e o mesmo script mithril
+                    $phpBinary = PHP_BINARY;
+                    $script = realpath(__DIR__ . '/mithril'); // self
+
+                    // Repassa argumentos críticos e desativa Xdebug nos filhos para limpar output
+                    // Adiciona --quiet para evitar spam de "Running worker" e "No job found"
+                    $workerCmd = sprintf(
+                        '"%s" -dxdebug.mode=off %s "%s" work --storage="%s" --quiet',
+                        $phpBinary,
+                        $memory ? "-d memory_limit={$memory}" : "",
+                        $script,
+                        $storage
+                    );
+
+                    if ($bootstrap) {
+                        $workerCmd .= sprintf(' --bootstrap="%s"', $bootstrap);
+                    }
+
+                    $supervisor = new ProcessSupervisor($queue, $workerCmd, $concurrency, $worker->onLog);
+                    ConsoleHelper::println("Press Ctrl+C to stop.");
+                    $supervisor->run($sleep);
+                } else {
+                    // Modo Simples (Single-process loop)
+                    if ($memory) {
+                        ini_set('memory_limit', $memory);
+                        ConsoleHelper::info("Memory limit set to: {$memory}");
+                    }
+                    ConsoleHelper::info("Starting Mithril Worker in Daemon Mode (Single Process, Sleep: {$sleep}ms)...");
+                    ConsoleHelper::println("Press Ctrl+C to stop.");
+                    $worker->daemon($sleep);
+                }
+                exit(0);
+            }
 
         default:
             ConsoleHelper::banner();
-            
+
             ConsoleHelper::println(ConsoleHelper::colorize("Usage:", '33'));
             ConsoleHelper::println("  " . ConsoleHelper::colorize("php bin/mithril <command> [options]", '32'));
             ConsoleHelper::println("");
 
             ConsoleHelper::println(ConsoleHelper::colorize("Available Commands:", '33'));
-            
+
             $commands = [
                 'list'    => 'List jobs based on status, format, etc.',
                 'enqueue' => 'Push a new job to the queue manually.',
@@ -280,7 +299,7 @@ try {
 
             ConsoleHelper::println("");
             ConsoleHelper::println(ConsoleHelper::colorize("Examples:", '33'));
-            
+
             $examples = [
                 "php bin/mithril list --status=failed --format=csv --output=err.csv",
                 "php bin/mithril enqueue --class='App\\MyTask' --ctor='[]' --calls='[...]'",
@@ -292,7 +311,7 @@ try {
             foreach ($examples as $ex) {
                 ConsoleHelper::println("  " . ConsoleHelper::colorize($ex, '32'));
             }
-            
+
             exit(0);
     }
 } catch (Throwable $e) {
